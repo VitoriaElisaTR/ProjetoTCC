@@ -2,8 +2,13 @@ from PIL import Image
 from io import BytesIO
 import base64
 import streamlit as st
-import cx_Oracle
 from config.auth import *
+from config.mock_db import mock_insert_process
+
+try:
+    import cx_Oracle
+except ImportError:
+    cx_Oracle = None
 
 def conect_database_with_user():
     username = st.session_state.username
@@ -12,8 +17,12 @@ def conect_database_with_user():
     df_login_user_data, df_user_bd = make_db_highq_login(cursor)
     user_bd_login = df_login_user_data[df_login_user_data['EMAIL'] == username]['USERNAME'].values[0]
     print(f"Usuário logado: {username}")
-    conn_user, cursor_user = database_conection(user_bd_login, user_bd_login)
 
+    # no modo mock, reutiliza a mesma conexão SQLite (não há schemas por usuário)
+    if is_mock_mode():
+        return conn, cursor
+
+    conn_user, cursor_user = database_conection(user_bd_login, user_bd_login)
     return conn_user, cursor_user
 
 def image_to_base64(img):
@@ -86,6 +95,11 @@ def dict_prc_register_process(conn, cursor, process_number, lawyer_name, process
 
 
 def send_values_prc(register_process_dict, conn, cursor):
+    # modo mock SQLite
+    if is_mock_mode():
+        return mock_insert_process(register_process_dict, conn)
+
+    # modo Oracle real
     sql = """
         BEGIN
             inserir_processo_com_arquivo(
@@ -109,14 +123,12 @@ def send_values_prc(register_process_dict, conn, cursor):
             );
         END;
     """
-
-
     try:
         cursor.setinputsizes(p_arquivo_pdf=cx_Oracle.BLOB, p_observacoes_clob=cx_Oracle.CLOB)
         cursor.execute(sql, register_process_dict)
         conn.commit()
-    except cx_Oracle.IntegrityError:
-        st.toast("Erro ao tentar fazer cadastro de novo usuário!", icon="❌")
+    except Exception:
+        st.toast("Erro ao tentar fazer cadastro de novo processo!", icon="❌")
         return False
     return True
 
@@ -153,7 +165,7 @@ def send_values_edit_process(edit_process_dict, conn, cursor):
         cursor.execute(sql, (edit_process_dict['p_valor_causa'], edit_process_dict['p_valor_definido_causa'], edit_process_dict['p_valor_pago_causa'], edit_process_dict['p_nome_juiz'], edit_process_dict['p_observacoes_clob'], edit_process_dict['p_caminho_processual'], edit_process_dict['p_numero_processo']))
         conn.commit()
         print("Dados atualizados com sucesso!\n")
-    except cx_Oracle.IntegrityError:
-        st.toast("Erro ao tentar fazer cadastro de novo usuário!", icon="❌")
+    except Exception:
+        st.toast("Erro ao tentar atualizar processo!", icon="❌")
         return False
     return True

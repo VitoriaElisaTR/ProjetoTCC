@@ -2,33 +2,51 @@
 import streamlit as st
 import json
 import os
-import cx_Oracle
 import pandas as pd
+
+try:
+    import cx_Oracle
+    _ORACLE_AVAILABLE = True
+except ImportError:
+    _ORACLE_AVAILABLE = False
+
+from config.mock_db import mock_database_connection, mock_get_data, mock_insert_process
 
 USERS_FILE = "data/users.json"
 
+# controla qual backend está ativo: True = SQLite mock, False = Oracle
+_USE_MOCK = False
+
+
+def is_mock_mode():
+    return _USE_MOCK
+
+
 def database_conection(user_bd='admin', password_bd='admin', tns_bd='DKR_NAC_213'):
-    try:
-        conn = cx_Oracle.connect(user=str(user_bd), password=str(password_bd), dsn=str(tns_bd))
-        cursor = conn.cursor()
-        return conn, cursor
-    except cx_Oracle.DatabaseError as e:
-        return None, None
-    
+    global _USE_MOCK
+    if _ORACLE_AVAILABLE and not _USE_MOCK:
+        try:
+            conn = cx_Oracle.connect(user=str(user_bd), password=str(password_bd), dsn=str(tns_bd))
+            cursor = conn.cursor()
+            return conn, cursor
+        except Exception:
+            pass
+    # fallback SQLite
+    _USE_MOCK = True
+    return mock_database_connection(username=user_bd)
+
 
 def get_data(query, cursor):
-    '''
-        Esta função faz requisições no bano de dados, criando dataframe com as informações obtidas
-    '''
+    global _USE_MOCK
+    if _USE_MOCK:
+        return mock_get_data(query, cursor)
     try:
         cursor.execute(query)
         results = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
-        
         df = pd.DataFrame(results, columns=columns)
         return df
-
-    except cx_Oracle.DatabaseError as e:
+    except Exception:
         return None
     
 
@@ -98,28 +116,28 @@ def login(username, password):
 
 
 def insert_user_data(conn, cursor, register_dict):
-    sql = f"""
+    sql = """
         INSERT INTO login_user_data(NAME, EMAIL, LOGIN_PASSWORD, NUM_OAB, USERNAME)
         VALUES (:1, :2, :3, :4, :5)
     """
     try:
         cursor.execute(sql, (register_dict['nome'], register_dict['email'], register_dict['senha'], register_dict['num_oab'], register_dict['username']))
         conn.commit()
-    except cx_Oracle.IntegrityError:
+    except Exception:
         st.toast("Erro ao tentar fazer cadastro de novo usuário!", icon="❌")
         return False
     return True
 
 
 def insert_db_user(conn, cursor, register_bd_dict):
-    sql = f"""
+    sql = """
         INSERT INTO users(USERNAME, PASSWORD)
         VALUES (:1, :2)
     """
     try:
         cursor.execute(sql, (register_bd_dict['username'], register_bd_dict['password']))
         conn.commit()
-    except cx_Oracle.IntegrityError as e:
+    except Exception as e:
         print(f"Erro ao tentar inserir usuário no banco de dados: {e}")
         st.toast("Erro ao tentar fazer cadastro de novo usuário!", icon="❌")
         return False
@@ -147,8 +165,8 @@ def register_new_password(email, new_password):
 
 
 def update_new_password(conn, cursor, email, new_password):
-    sql = f"""
-        UPDATE login_user_data 
+    sql = """
+        UPDATE login_user_data
         SET LOGIN_PASSWORD = :1
         WHERE EMAIL = :2
     """
@@ -156,14 +174,14 @@ def update_new_password(conn, cursor, email, new_password):
         cursor.execute(sql, (new_password, email))
         conn.commit()
         return True
-    except cx_Oracle.IntegrityError as e:
+    except Exception as e:
         print(f"Erro ao tentar atualizar senha: {e}")
         return False
 
 
 def update_user_data(conn, cursor, register_dict):
-    sql = f"""
-        UPDATE login_user_data 
+    sql = """
+        UPDATE login_user_data
         SET NAME = :1, LOGIN_PASSWORD = :2, NUM_OAB = :3
         WHERE EMAIL = :4
     """
@@ -171,7 +189,7 @@ def update_user_data(conn, cursor, register_dict):
         cursor.execute(sql, (register_dict['nome'], register_dict['senha'], register_dict['oab'], register_dict['email']))
         conn.commit()
         return True
-    except cx_Oracle.IntegrityError as e:
+    except Exception as e:
         print(f"Erro ao tentar atualizar usuário: {e}")
         st.toast("Erro ao tentar fazer cadastro de novo usuário!", icon="❌")
         return False
