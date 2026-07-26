@@ -27,7 +27,7 @@ def user_profile():
 
     # Campos de dados
     nome = st.text_input("Nome", st.session_state.user_data["nome"], disabled=not st.session_state.edit_mode)
-    email = st.text_input("Email", st.session_state.user_data["email"], st.session_state.edit_mode, disabled=True)
+    email = st.text_input("Email", st.session_state.user_data["email"], disabled=True)
     oab = st.text_input("Número da OAB", st.session_state.user_data["oab"], disabled=not st.session_state.edit_mode)
     senha = st.text_input("Senha", st.session_state.user_data["senha"], type="password", disabled=not st.session_state.edit_mode)
 
