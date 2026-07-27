@@ -25,14 +25,11 @@ def process_history():
         selecionado = st.selectbox("Selecione um processo para editar:", opcoes_list)
 
         if selecionado == "Todos":
-            # Exibir todos os processos
-            # Exibir tabela
-            st.dataframe(df_process.drop(columns=["NUMERO_PROCESSO"]), use_container_width=True)
+            st.dataframe(df_process, use_container_width=True)
         else:
-            # Exibir apenas o processo selecionado
             df_selecionado = df_process[df_process["NUMERO_PROCESSO"] == selecionado]
             if not df_selecionado.empty:
-                st.dataframe(df_selecionado.drop(columns=["NUMERO_PROCESSO"]), use_container_width=True)
+                st.dataframe(df_selecionado, use_container_width=True)
             else:
                 st.warning("Nenhum processo encontrado com o número selecionado.")
 
