@@ -26,10 +26,10 @@ def user_profile():
 
 
     # Campos de dados
-    nome = st.text_input("Nome", st.session_state.user_data["nome"], disabled=not st.session_state.edit_mode)
-    email = st.text_input("Email", st.session_state.user_data["email"], disabled=True)
-    oab = st.text_input("Número da OAB", st.session_state.user_data["oab"], disabled=not st.session_state.edit_mode)
-    senha = st.text_input("Senha", st.session_state.user_data["senha"], type="password", disabled=not st.session_state.edit_mode)
+    nome = st.text_input(label="Nome", value=str(st.session_state.user_data["nome"] or ""), disabled=not st.session_state.edit_mode)
+    email = st.text_input(label="Email", value=str(st.session_state.user_data["email"] or ""), disabled=True)
+    oab = st.text_input(label="Número da OAB", value=str(st.session_state.user_data["oab"] or ""), disabled=not st.session_state.edit_mode)
+    senha = st.text_input(label="Senha", value=str(st.session_state.user_data["senha"] or ""), type="password", disabled=not st.session_state.edit_mode)
 
     # Botão para editar
     if st.button("Editar" if not st.session_state.edit_mode else "Cancelar"):
