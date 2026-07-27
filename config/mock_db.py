@@ -62,7 +62,8 @@ def _init_db():
             valor_pago_causa       REAL,
             observacoes_clob       TEXT,
             justica                TEXT,
-            tribunal               TEXT
+            tribunal               TEXT,
+            data_cadastro          TEXT DEFAULT (date('now'))
         );
 
         CREATE TABLE IF NOT EXISTS arquivos_processos (
@@ -207,28 +208,90 @@ def _init_db():
     ]
     cur.executemany("INSERT OR IGNORE INTO datajud_endpoints(justica, tribunal, endpoint) VALUES (?,?,?)", endpoints)
 
-    # Seed: processos de exemplo para o admin
+    # Seed: processos fictícios de amostragem para o admin
+    # formato: (numero, classe, rito, advogado, oab, cliente, caminho, juiz, estado,
+    #           valor_causa, valor_deferido, valor_pago, obs, justica, tribunal, data_cadastro)
     processos_exemplo = [
-        ('0001234-56.2023.5.02.0001', 'Ação Trabalhista', 'Sumaríssimo', 'Maria Silva', '12345/SP',
-         'João da Silva ME', 'Contestação', 'Dr. Roberto Alves', 'SP', 15000.00, 12000.00, 6000.00,
-         'Processo de reclamação trabalhista por verbas rescisórias.', 'Justiça do Trabalho',
-         'Tribunal Regional do Trabalho da 2ª Região'),
+        ('0004521-11.2022.5.03.0137', 'Ação Trabalhista', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Transportadora Rápida Ltda', 'Sentença', 'Dra. Camila Rocha', 'MG',
+         45000.00, 38000.00, 38000.00,
+         'Reconhecimento de vínculo empregatício e pagamento de horas extras. Sentença favorável ao reclamante.',
+         'Justiça do Trabalho', 'Tribunal Regional do Trabalho da 3ª Região', '2025-08-10'),
+
+        ('5009871-12.2023.4.04.7100', 'Ação Tributária', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Comércio e Exportação Sul Ltda', 'Apelação', 'Dra. Renata Borges', 'RS',
+         180000.00, 150000.00, 75000.00,
+         'Ação anulatória de auto de infração fiscal referente a contribuições previdenciárias.',
+         'Justiça Federal', 'Tribunal Regional Federal da 4ª Região', '2025-09-05'),
+
         ('0009876-54.2022.8.26.0100', 'Ação Civil', 'Ordinário', 'Maria Silva', '12345/SP',
-         'Construtora ABC Ltda', 'Petição Inicial', 'Dra. Ana Costa', 'SP', 85000.00, 0.00, 0.00,
-         'Ação de indenização por danos materiais e morais.', 'Justiça Estadual',
-         'Tribunal de Justiça de São Paulo'),
+         'Construtora ABC Ltda', 'Apelação', 'Dra. Ana Costa', 'SP',
+         120000.00, 95000.00, 47500.00,
+         'Ação de indenização por danos materiais e morais decorrentes de vícios na construção do imóvel.',
+         'Justiça Estadual', 'Tribunal de Justiça de São Paulo', '2025-09-22'),
+
         ('5001122-33.2024.4.03.6100', 'Ação Tributária', 'Ordinário', 'Maria Silva', '12345/SP',
-         'Empresa XYZ S.A.', 'Sentença', 'Dr. Carlos Mendes', 'SP', 230000.00, 180000.00, 90000.00,
-         'Mandado de segurança para suspensão de exigibilidade de crédito tributário.', 'Justiça Federal',
-         'Tribunal Regional Federal da 3ª Região'),
+         'Indústria Metalúrgica XYZ S.A.', 'Sentença', 'Dr. Carlos Mendes', 'SP',
+         350000.00, 280000.00, 140000.00,
+         'Mandado de segurança para suspensão de exigibilidade de crédito tributário de ICMS. Sentença procedente.',
+         'Justiça Federal', 'Tribunal Regional Federal da 3ª Região', '2025-10-14'),
+
+        ('0001234-56.2023.5.02.0001', 'Ação Trabalhista', 'Sumaríssimo', 'Maria Silva', '12345/SP',
+         'João da Silva ME', 'Contestação', 'Dr. Roberto Alves', 'SP',
+         15000.00, 12000.00, 6000.00,
+         'Reclamação trabalhista por verbas rescisórias não pagas: FGTS, férias e 13º salário.',
+         'Justiça do Trabalho', 'Tribunal Regional do Trabalho da 2ª Região', '2025-10-28'),
+
+        ('0023456-91.2022.8.13.0024', 'Ação Empresarial', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Tech Solutions Desenvolvimento de Software Ltda', 'Conciliação', 'Dra. Juliana Martins', 'MG',
+         200000.00, 0.00, 0.00,
+         'Ação de dissolução parcial de sociedade com apuração de haveres. Em fase de conciliação.',
+         'Justiça Estadual', 'Tribunal de Justiça de Minas Gerais', '2025-11-08'),
+
+        ('0003317-88.2023.8.19.0001', 'Ação Civil', 'Sumário', 'Maria Silva', '12345/SP',
+         'Banco Seguro S.A.', 'Intimação', 'Dr. Marcos Ferreira', 'RJ',
+         65000.00, 0.00, 0.00,
+         'Ação revisional de contrato bancário com cobrança de juros abusivos e danos morais por negativação indevida.',
+         'Justiça Estadual', 'Tribunal de Justiça do Rio de Janeiro', '2025-11-19'),
+
+        ('1005432-77.2023.4.01.3400', 'Ação Administrativa', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Instituto Federal de Brasília', 'Notificação', 'Dr. Antônio Souza', 'DF',
+         80000.00, 0.00, 0.00,
+         'Mandado de segurança contra ato administrativo de exoneração de servidor público estável.',
+         'Justiça Federal', 'Tribunal Regional Federal da 1ª Região', '2025-12-03'),
+
+        ('0007843-29.2024.5.15.0001', 'Ação Trabalhista', 'Sumaríssimo', 'Maria Silva', '12345/SP',
+         'Supermercado Bom Preço S.A.', 'Conciliação', 'Dr. Paulo Henrique Lima', 'SP',
+         32000.00, 0.00, 0.00,
+         'Pedido de pagamento de horas extras e adicional noturno. Em fase de conciliação.',
+         'Justiça do Trabalho', 'Tribunal Regional do Trabalho da 15ª Região', '2025-12-17'),
+
+        ('0011982-44.2024.8.16.0001', 'Ação Civil', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Plano de Saúde VidaBoa Ltda', 'Petição Inicial', 'Dra. Fernanda Oliveira', 'PR',
+         95000.00, 0.00, 0.00,
+         'Ação de obrigação de fazer c/c indenização por recusa de cobertura de procedimento cirúrgico.',
+         'Justiça Estadual', 'Tribunal de Justiça do Paraná', '2026-01-09'),
+
+        ('0001593-45.2023.8.19.0014', 'Ação Penal', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Ministério Público do RJ (réu: Carlos Alberto Nunes)', 'Contestação', 'Dr. Eduardo Pinto', 'RJ',
+         0.00, 0.00, 0.00,
+         'Defesa em ação penal por crime de estelionato qualificado. Réu responde em liberdade.',
+         'Justiça Estadual', 'Tribunal de Justiça do Rio de Janeiro', '2026-02-14'),
+
+        ('0088712-05.2024.3.00.0000', 'Ação Constitucional', 'Ordinário', 'Maria Silva', '12345/SP',
+         'Associação dos Servidores Municipais de SP', 'Petição Inicial', 'Min. Dra. Beatriz Andrade', 'SP',
+         0.00, 0.00, 0.00,
+         'Mandado de injunção coletivo para regulamentação do direito de greve dos servidores públicos municipais.',
+         'Tribunais Superiores', 'Tribunal Superior de Justiça', '2026-03-20'),
     ]
     for p in processos_exemplo:
         cur.execute("""
             INSERT OR IGNORE INTO processos_juridicos
             (numero_processo, classe_processo, rito_processo, nome_advogado, numero_oab,
              nome_cliente_empresa, caminho_processual, nome_juiz, estado_processo,
-             valor_causa, valor_deferido_causa, valor_pago_causa, observacoes_clob, justica, tribunal)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             valor_causa, valor_deferido_causa, valor_pago_causa, observacoes_clob,
+             justica, tribunal, data_cadastro)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, p)
 
     conn.commit()
@@ -311,20 +374,23 @@ def mock_get_data(query, cursor):
 
 def mock_insert_process(register_process_dict, conn):
     """Substitui a stored procedure Oracle inserir_processo_com_arquivo."""
+    import datetime
     cur = conn.cursor()
     d = register_process_dict
     cur.execute("""
         INSERT OR REPLACE INTO processos_juridicos
         (numero_processo, classe_processo, rito_processo, nome_advogado, numero_oab,
          nome_cliente_empresa, caminho_processual, nome_juiz, estado_processo,
-         valor_causa, valor_deferido_causa, valor_pago_causa, observacoes_clob, justica, tribunal)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         valor_causa, valor_deferido_causa, valor_pago_causa, observacoes_clob,
+         justica, tribunal, data_cadastro)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         d.get('p_numero_processo'), d.get('p_classe_processo'), d.get('p_rito_processo'),
         d.get('p_nome_advogado'), d.get('p_numero_oab'), d.get('p_nome_cliente_empresa'),
         d.get('p_caminho_processual'), d.get('p_nome_juiz'), d.get('p_estado_processo'),
         d.get('p_valor_causa'), d.get('p_valor_definido_causa'), d.get('p_valor_pago_causa'),
         d.get('p_observacoes_clob'), d.get('p_justica'), d.get('p_tribunal'),
+        datetime.date.today().isoformat(),
     ))
     if d.get('p_nome_arquivo'):
         cur.execute("""
